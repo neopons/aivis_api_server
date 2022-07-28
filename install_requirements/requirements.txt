@@ -1,0 +1,9 @@
+wandb
+scipy
+webrtcvad
+tensorflow==2.8.0
+tensorflow_addons
+numpy
+absl-py
+transformers
+tensorflow_model_optimization

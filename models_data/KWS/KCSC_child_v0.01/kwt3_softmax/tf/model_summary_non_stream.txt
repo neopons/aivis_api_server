@@ -1,0 +1,21 @@
+Model: "model"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ input_1 (InputLayer)        [(100, 24000)]            0         
+                                                                 
+ speech_features (SpeechFeat  (100, 148, 40)           0         
+ ures)                                                           
+                                                                 
+ kws_transformer (KWSTransfo  (100, 192)               5368128   
+ rmer)                                                           
+                                                                 
+ sequential_12 (Sequential)  multiple                  6176      
+                                                                 
+ activation (Activation)     (100, 32)                 0         
+                                                                 
+=================================================================
+Total params: 5,374,304
+Trainable params: 5,374,304
+Non-trainable params: 0
+_________________________________________________________________
