@@ -321,4 +321,8 @@ cython_debug/
 pyvenv.cfg
 pip-selfcheck.json
 
+# GCP App Engine
+app.yaml
+.gcloudignore
+
 # End of https://www.toptal.com/developers/gitignore/api/macos,python,venv,pycharm

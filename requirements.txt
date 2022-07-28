@@ -7,3 +7,5 @@ numpy
 absl-py
 transformers
 tensorflow_model_optimization
+django
+djangorestframework

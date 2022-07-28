@@ -308,23 +308,24 @@ def inference_kws(kws_model, input_audio, audio_sample_length):
     return prediction
 
 
-def make_kws_results(results, answer_labels, labels, score_option):
+def make_kws_results(kws_results, answer_labels, labels, score_option):
     score = 0.0
+    if not kws_results:
+        result = False
+        print("sound is too small or non-voice sound(include voice at least 20%).")
+        return score, result
     for answer_label in answer_labels:
         answer_results = []
-        for result in results:
-            result = result.squeeze()
-            answer_result = result[labels.index(answer_label)]
+        for kws_result in kws_results:
+            kws_result = kws_result.squeeze()
+            answer_result = kws_result[labels.index(answer_label)]
             answer_results.append(answer_result)
         answer_results = np.array(answer_results)
         top_results = np.argsort(-answer_results)[:3]
         topscore = 0.0
         for top_result in top_results:
             topscore += answer_results[top_result]
-        if len(results) >= 3:
-            topscore /= 3.0
-        else:
-            topscore /= len(results)
+        topscore /= len(top_results)
         if score_option == "modified":
             if topscore >= 1.0:
                 topscore = 1.0
@@ -341,7 +342,8 @@ def make_kws_results(results, answer_labels, labels, score_option):
     elif score < 0.001:
         score = 0
     score = score * 100
-    return score
+    result = True
+    return score, result
 
 
 def find_answer_labels(keyword_sentence, labels):
@@ -376,7 +378,5 @@ def run_model(audio, shift_duration=0.1, clip_duration=1.5, sample_rate=16000, v
             vad_result = True
         if vad_result:
             kws_results.append(inference_kws(kws_model, audio_frame, num_clip_frame))
-        else:
-            kws_results = False
 
     return kws_results
