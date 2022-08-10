@@ -50,3 +50,10 @@ if __name__ == '__main__':
     score, result = model_web.make_kws_results(kws_results, answer_labels, labels, "raw")
     print(f"final score : {score}")
 
+    ############## below nonverbal function results ###############
+    vad_model = model_web.load_vad_model(3)
+    sample_rate = 16000
+
+    vad_percent, voice_energy_list = model_web.run_model_nonverbal(audio, vad_model, sample_rate=sample_rate)
+    print(f"success vad percent is {vad_percent}")
+    print(f"success voice energies is {voice_energy_list}")

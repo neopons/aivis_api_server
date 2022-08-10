@@ -1,4 +1,6 @@
 import json
+import time
+
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 import model_web
@@ -8,26 +10,59 @@ import scipy.io.wavfile as wav
 
 
 # Create your views here.
+
+def base64_to_audio_numpy(audio_base64):
+    audio_decoded = base64.b64decode(audio_base64)
+
+    wav_file = open("audio.wav", "wb")
+    wav_file.write(audio_decoded)
+    samplerate, wave_data = wav.read("audio.wav")
+
+    audio = np.array(wave_data, np.float32).reshape(-1, 1) / 32768.0
+
+    return audio
+
+
 @api_view(['POST'])
-def recognition(request):
+def nonverbal(request):
+    json_data = json.loads(request.body)
+
+    audio_base64 = json_data['audio']
+
+    audio = base64_to_audio_numpy(audio_base64)
+
+    start_time = time.time()
+
+    # below nonverbal function results
+    vad_model = model_web.load_vad_model(3)
+    sample_rate = 16000
+
+    vad_percent, voice_energy_list = model_web.run_model_nonverbal(audio, vad_model, sample_rate=sample_rate)
+    print(f"success vad percent is {vad_percent}")
+    print(f"success voice energies is {voice_energy_list}")
+
+    end_time = time.time()
+
+    print(f"Total Time : {end_time - start_time} sec")
+
+    response = {
+        'vad_percent': vad_percent,
+        'voice_energy_list': voice_energy_list
+    }
+
+    return Response(response)
+
+
+@api_view(['POST'])
+def pronunciation(request):
     json_data = json.loads(request.body)
 
     keyword = json_data['script']
     audio_base64 = json_data['audio']
-    # print(f"audio_base64 : {audio_base64}")
-    audio_decoded = base64.b64decode(audio_base64)
-    # print(f"audio_decoded : {audio_decoded.hex()}")
-    # print(f"audio_base64 byte array : {bytearray(audio_decoded)}")
-    wav_file = open("audio.wav", "wb")
-    wav_file.write(audio_decoded)
-    samplerate, wave_data = wav.read("audio.wav")
-    # print(f"wave_data : {wave_data}")
 
-    # audio_decoded_list = list(audio_decoded)
-    # print(f"audio_decoded_list : {audio_decoded_list}")
+    audio = base64_to_audio_numpy(audio_base64)
 
-    audio = np.array(wave_data, np.float32).reshape(-1, 1) / 32768.0
-    # print(f"audio : {audio}")
+    start_time = time.time()
 
     # if you want to reduce inference time, it is better to preload the kws_model.
     vad_model = model_web.load_vad_model(3)
@@ -46,6 +81,10 @@ def recognition(request):
     # if "raw" option score value is always 99~100, change option "modified"
     score, result = model_web.make_kws_results(kws_results, answer_labels, labels, "raw")
     print(f"final score : {score}")
+
+    end_time = time.time()
+
+    print(f"Total Time : {end_time - start_time} sec")
 
     response = {'score': score}
 

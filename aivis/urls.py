@@ -19,5 +19,6 @@ from voice_recognition import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('recognition', views.recognition)
+    path('pronunciation', views.pronunciation),
+    path('nonverbal', views.nonverbal)
 ]

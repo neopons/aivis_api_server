@@ -3,6 +3,7 @@ from encodings import normalize_encoding
 from ipaddress import summarize_address_range
 from lib2to3.pgen2.token import AMPEREQUAL
 import os
+from random import vonmisesvariate
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -103,39 +104,44 @@ def vad_function(sample_rate, frame_duration_ms, vad_percent, vad, audio):
     return vad_result
 
 
-def vad_function2(sample_rate, vad, audio, frame_duration_ms=30):
+def vad_energy_function(sample_rate, vad, audio, frame_duration_ms=40, start_band=300, end_band=7200):
+    voice_energies = []
+    num_shift_frame = int(sample_rate * frame_duration_ms / 1000.0)
     audio_pcm = float2pcm(audio)
-    frames = frame_generator(frame_duration_ms, audio_pcm, sample_rate)
+    frames = frame_generator(frame_duration_ms / 2, audio_pcm, sample_rate)
     frames = list(frames)
     total = len(frames)
+    frame_num = 0
     vad_frame_num = 0
     for frame in frames:
         is_speech = vad.is_speech(frame.bytes, sample_rate)
         if is_speech:
             vad_frame_num += 1
-    output_percent = vad_frame_num / (total * 1.0)
-    return output_percent
+            voice_audio = audio[frame_num * num_shift_frame:(frame_num + 1) * num_shift_frame]
+            amplitude = np.abs(np.fft.fft(voice_audio))
+            amplitude = amplitude[1:]
+            energy = amplitude ** 2
 
+            frequency = np.fft.fftfreq(len(energy), 1.0 / sample_rate)
+            frequency = frequency[1:]
+            normalize_energy = {}
+            for (i, freq) in enumerate(frequency):
+                if abs(freq) not in normalize_energy:
+                    normalize_energy[abs(freq)] = energy[i] * 2
 
-def energy_function(sample_rate, audio, start_band=300, end_band=7200):
-    amplitude = np.abs(np.fft.fft(audio))
-    amplitude = amplitude[1:]
-    energy = amplitude ** 2
+            sum_energy = 0
+            for f in normalize_energy.keys():
+                if start_band < f < end_band:
+                    sum_energy += normalize_energy[f]
+            # full_energy = sum(normalize_energy.values())
+            # voice_rate = sum_energy/(full_energy*1.0)
+            voice_energies.append(sum_energy[0])
+        else:
+            voice_energies.append(0)
+        frame_num += 1
 
-    frequency = np.fft.fftfreq(len(audio), 1.0 / sample_rate)
-    frequency = frequency[1:]
-    normalize_energy = {}
-    for (i, freq) in enumerate(frequency):
-        if abs(freq) not in normalize_energy:
-            normalize_energy[abs(freq)] = energy[i] * 2
-
-    sum_energy = 0
-    for f in normalize_energy.keys():
-        if start_band < f < end_band:
-            sum_energy += normalize_energy[f]
-    # full_energy = sum(normalize_energy.values())
-    # voice_rate = sum_energy/(full_energy*1.0)
-    return sum_energy
+    output_percent = vad_frame_num / (total * 1.0) * 100
+    return output_percent, voice_energies
 
 
 def read_labels(filename):
@@ -373,10 +379,20 @@ def run_model(audio, shift_duration=0.1, clip_duration=1.5, sample_rate=16000, v
     for i in range(num_frame):
         audio_frame = audio[int(i * num_shift_frame):int(i * num_shift_frame + num_clip_frame)]
         if vad_model is not None:
-            vad_result = vad_function(sample_rate, 30, 0.2, vad_model, audio_frame)  # true or false
+            vad_result = vad_function(sample_rate, 20, 0.2, vad_model, audio_frame)  # true or false
         else:
             vad_result = True
         if vad_result:
             kws_results.append(inference_kws(kws_model, audio_frame, num_clip_frame))
 
     return kws_results
+
+
+def run_model_nonverbal(audio, vad_model, sample_rate=16000):
+    voice_energy_list = []
+    frame_duration_ms = 40
+    vad_percent, voice_energy_list = vad_energy_function(sample_rate, vad_model, audio,
+                                                         frame_duration_ms=frame_duration_ms, start_band=300,
+                                                         end_band=7200)
+
+    return vad_percent, voice_energy_list

@@ -45,6 +45,14 @@ def recognition(request):
         score, result = model_web.make_kws_results(kws_results, answer_labels, labels, "raw")
         print(f"final score : {score}")
 
+        ############## below nonverbal function results ###############
+        vad_model = model_web.load_vad_model(3)
+        sample_rate = 16000
+
+        vad_percent, voice_energies = model_web.run_model_nonverbal(audio, vad_model, sample_rate=sample_rate)
+        print(f"success vad percent is {vad_percent}")
+        print(f"success voice energies is {voice_energies}")
+
     response = {}
     if result:
         response['score'] = score
