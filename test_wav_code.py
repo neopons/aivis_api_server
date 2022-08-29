@@ -33,8 +33,9 @@ if __name__ == '__main__':
     ########## below this line is exactly the same as sample_code.py ###########
     #if you want to reduce inference time, it is better to preload the kws_model.
     vad_model = model_web.load_vad_model(3)
-    kws_model = model_web.load_kws_model('models_data/KWS/KCSC_child_v0.01/kwt3_softmax')
-    labels = model_web.read_labels('config/labels_KCSC_child_30.txt')
+    # if kws_model result always makes too high score, then change kws_model 'kwt3_softmax' to 'kwt3_softmax_nospecaug'
+    kws_model = model_web.load_kws_model('models_data/KWS/KCSC_child_v1.00/kwt3_softmax')
+    labels = model_web.read_labels('config/labels_KCSC_child_100.txt')
 
     #if shift_duration value increases, total inference time decreases. but make more error.
     shift_duration = 0.1  # seconds to shift
