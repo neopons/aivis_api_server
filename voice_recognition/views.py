@@ -9,9 +9,17 @@ import base64
 import scipy.io.wavfile as wav
 import tempfile
 import os
-
+import main
+# import psutil
 
 # Create your views here.
+
+
+# def memory_usage(message: str = 'debug'):
+#     # current process RAM usage
+#     p = psutil.Process()
+#     rss = p.memory_info().rss / 2 ** 20 # Bytes to MB
+#     print(f"[{message}] memory usage: {rss: 10.5f} MB")
 
 
 def base64_to_audio_numpy(audio_base64):
@@ -71,8 +79,68 @@ def nonverbal(request):
         return Response(response)
 
 
+# @api_view(['POST'])
+# def pronunciation(request):
+#     start_time = time.time()
+#
+#     json_data = json.loads(request.body)
+#
+#     keyword = json_data['script']
+#     audio_base64 = json_data['audio']
+#
+#     audio = base64_to_audio_numpy(audio_base64)
+#
+#     # 임시 코드
+#     # audio = None
+#     #
+#
+#     if audio is not None:
+#
+#         # if you want to reduce inference time, it is better to preload the kws_model.
+#         vad_model = model_web.load_vad_model(3)
+#
+#         # if kws_model result always makes too high score, then change kws_model 'kwt3_softmax' to
+#         # 'kwt3_softmax_nospecaug'
+#         kws_model = model_web.load_kws_model('models_data/KWS/KCSC_child_v1.00/kwt3_softmax')
+#         labels = model_web.read_labels('config/labels_KCSC_child_100.txt')
+#
+#         # if shift_duration value increases, total inference time decreases. but make more error.
+#         shift_duration = 0.1  # seconds to shift
+#         sample_rate = 16000
+#         answer_labels = model_web.find_answer_labels(keyword, labels)
+#
+#         # if vad_model is None, then run_model function will run without vad_model
+#         kws_results = model_web.run_model(audio, shift_duration=shift_duration, clip_duration=1.5, sample_rate=sample_rate,
+#                                           vad_model=vad_model, kws_model=kws_model)
+#
+#         # if "raw" option score value is always 99~100, change option "modified"
+#         score, result = model_web.make_kws_results(kws_results, answer_labels, labels, "raw")
+#         print(f"final score : {score}")
+#
+#         end_time = time.time()
+#
+#         # print(f"Total Time : {end_time - start_time} sec")
+#
+#         # response = {'score': score}
+#         response = {
+#             'total_time': end_time - start_time,
+#             'score': score
+#         }
+#
+#         # memory_usage('pronunciation')
+#
+#         return Response(response)
+#
+#     else:
+#         response = {'score': 0}
+#
+#         return Response(response)
+
+
 @api_view(['POST'])
 def pronunciation(request):
+    start_time = time.time()
+
     json_data = json.loads(request.body)
 
     keyword = json_data['script']
@@ -80,39 +148,26 @@ def pronunciation(request):
 
     audio = base64_to_audio_numpy(audio_base64)
 
-    if audio is not None:
+    shift_duration = 0.1  # seconds to shift
+    sample_rate = 16000
+    answer_labels = model_web.find_answer_labels(keyword, main.labels)
 
-        start_time = time.time()
+    kws_results = model_web.run_model(audio, shift_duration=shift_duration, clip_duration=1.5, sample_rate=sample_rate,
+                                      vad_model=main.vad_model, kws_model=main.kws_model)
 
-        # if you want to reduce inference time, it is better to preload the kws_model.
-        vad_model = model_web.load_vad_model(3)
+    score, result = model_web.make_kws_results(kws_results, answer_labels, main.labels, "raw")
 
-        # if kws_model result always makes too high score, then change kws_model 'kwt3_softmax' to 'kwt3_softmax_nospecaug'
-        kws_model = model_web.load_kws_model('models_data/KWS/KCSC_child_v1.00/kwt3_softmax')
-        labels = model_web.read_labels('config/labels_KCSC_child_100.txt')
+    end_time = time.time()
 
-        # if shift_duration value increases, total inference time decreases. but make more error.
-        shift_duration = 0.1  # seconds to shift
-        sample_rate = 16000
-        answer_labels = model_web.find_answer_labels(keyword, labels)
+    response = {
+        'total_time': end_time - start_time,
+        'score': score
+    }
 
-        # if vad_model is None, then run_model function will run without vad_model
-        kws_results = model_web.run_model(audio, shift_duration=shift_duration, clip_duration=1.5, sample_rate=sample_rate,
-                                          vad_model=vad_model, kws_model=kws_model)
+    return Response(response)
 
-        # if "raw" option score value is always 99~100, change option "modified"
-        score, result = model_web.make_kws_results(kws_results, answer_labels, labels, "raw")
-        print(f"final score : {score}")
 
-        end_time = time.time()
+@api_view(['GET'])
+def warmup(request):
 
-        print(f"Total Time : {end_time - start_time} sec")
-
-        response = {'score': score}
-
-        return Response(response)
-
-    else:
-        response = {'score': 0}
-
-        return Response(response)
+    return Response()

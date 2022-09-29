@@ -10,3 +10,5 @@ tensorflow_model_optimization
 django
 djangorestframework
 google-cloud-secret-manager==2.12.4
+psutil
+gunicorn
