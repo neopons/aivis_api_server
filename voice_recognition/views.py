@@ -1,3 +1,4 @@
+import datetime
 import json
 import time
 
@@ -28,9 +29,15 @@ def base64_to_audio_numpy(audio_base64):
     with tempfile.TemporaryDirectory() as tempDir:
         if os.path.exists(tempDir):
 
-            wav_file = open(tempDir + "/audio.wav", "wb")
+            now_date = datetime.datetime.now()
+
+            wav_file_path = tempDir + "/audio_" + now_date.strftime("%Y-%m-%d_%H%M%S") + ".wav"
+
+            print("wav_file_path : " + wav_file_path)
+
+            wav_file = open(wav_file_path, "wb")
             wav_file.write(audio_decoded)
-            samplerate, wave_data = wav.read(tempDir + "/audio.wav")
+            samplerate, wave_data = wav.read(wav_file_path)
 
             audio = np.array(wave_data, np.float32).reshape(-1, 1) / 32768.0
 

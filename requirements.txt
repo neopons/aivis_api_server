@@ -12,3 +12,4 @@ djangorestframework
 google-cloud-secret-manager==2.12.4
 psutil
 gunicorn
+protobuf==3.20.*
